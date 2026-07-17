@@ -1,0 +1,6 @@
+torch
+ncps
+flask
+flask-cors
+numpy
+matplotlib

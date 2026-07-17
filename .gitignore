@@ -1,0 +1,20 @@
+# Python stuff (auto-generated, never commit)
+__pycache__/
+*.pyc
+.venv/
+
+# Your data (too many files, too large for git)
+data/strokes/
+data/images/
+
+# Keep labels.txt (small, needed by server)
+!data/syl.txt
+
+# Trained models (large .pt files)
+checkpoints/
+
+# Mac junk
+.DS_Store
+
+# Training output
+*.png

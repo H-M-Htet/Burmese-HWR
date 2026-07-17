@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Myanmar Handwriting Recognition</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  /* --- Header --- */
+  .header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 4px;
+  }
+  .header .subtitle {
+    font-size: 0.82rem;
+    color: #64748b;
+  }
+
+  /* --- Layout --- */
+  .main-layout {
+    display: flex;
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  /* --- Draw Panel --- */
+  .draw-panel {
+    width: 460px;
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .panel-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Model selector */
+  .model-selector {
+    display: flex;
+    gap: 4px;
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .model-btn {
+    padding: 5px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: #64748b;
+    transition: all 0.15s;
+  }
+
+  .model-btn.active {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .model-btn:hover:not(.active) {
+    color: #e2e8f0;
+  }
+
+  .model-btn.unavailable {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .model-meta {
+    font-size: 0.72rem;
+    color: #64748b;
+    text-align: right;
+    margin-bottom: 10px;
+    min-height: 16px;
+  }
+
+  canvas {
+    width: 100%;
+    height: 300px;
+    background: #0f172a;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    cursor: crosshair;
+    touch-action: none;
+    display: block;
+  }
+
+  .canvas-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+
+  .stroke-info {
+    font-size: 0.78rem;
+    color: #475569;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 6px;
+  }
+
+  button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-predict {
+    background: #3b82f6;
+    color: white;
+    padding: 8px 22px;
+  }
+  .btn-predict:hover { background: #2563eb; }
+  .btn-predict:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+
+  .btn-secondary {
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+  }
+  .btn-secondary:hover { background: #334155; color: #e2e8f0; }
+
+  /* --- Results Panel --- */
+  .results-panel {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .top-prediction {
+    text-align: center;
+    padding: 20px 10px;
+    margin-bottom: 12px;
+    background: #0f172a;
+    border-radius: 10px;
+  }
+
+  .top-syllable {
+    font-size: 3.5rem;
+    line-height: 1.2;
+    color: #f1f5f9;
+    font-weight: 300;
+  }
+
+  .top-confidence {
+    font-size: 0.9rem;
+    color: #3b82f6;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .top-class-id {
+    font-size: 0.72rem;
+    color: #475569;
+    margin-top: 2px;
+  }
+
+  .other-results {
+    flex: 1;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    background: #0f172a;
+  }
+
+  .result-row:hover {
+    background: #1a2744;
+  }
+
+  .rr-rank {
+    font-size: 0.7rem;
+    color: #475569;
+    min-width: 16px;
+  }
+
+  .rr-syllable {
+    font-size: 1.3rem;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  .rr-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: #1e293b;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .rr-bar {
+    height: 100%;
+    background: #3b82f6;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .rr-conf {
+    font-size: 0.72rem;
+    color: #64748b;
+    min-width: 42px;
+    text-align: right;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #334155;
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .empty-state .text { font-size: 0.85rem; }
+
+  /* --- Syllable Reference Panel --- */
+  .reference-panel {
+    width: 300px;
+    max-height: 480px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-box {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    outline: none;
+  }
+  .search-box:focus { border-color: #3b82f6; }
+  .search-box::placeholder { color: #475569; }
+
+  .syllable-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 4px;
+  }
+
+  .syllable-grid::-webkit-scrollbar { width: 5px; }
+  .syllable-grid::-webkit-scrollbar-track { background: transparent; }
+  .syllable-grid::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+  .syl-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 2px;
+    border-radius: 6px;
+    background: #0f172a;
+    cursor: default;
+    transition: background 0.15s;
+  }
+
+  .syl-cell:hover {
+    background: #1a2744;
+  }
+
+  .syl-char {
+    font-size: 1.1rem;
+    color: #e2e8f0;
+    line-height: 1.3;
+  }
+
+  .syl-id {
+    font-size: 0.6rem;
+    color: #475569;
+  }
+
+  .ref-count {
+    font-size: 0.72rem;
+    color: #475569;
+    margin-bottom: 8px;
+  }
+
+  .status-bar {
+    text-align: center;
+    font-size: 0.78rem;
+    margin-top: 6px;
+    min-height: 18px;
+  }
+  .status-bar.error { color: #f87171; }
+  .status-bar.success { color: #4ade80; }
+  .status-bar.loading { color: #fbbf24; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Myanmar Handwriting Recognition</h1>
+  <p class="subtitle">Draw a Burmese syllable → model predicts the text</p>
+</div>
+
+<div class="main-layout">
+
+  <!-- ===== DRAW PANEL ===== -->
+  <div class="panel draw-panel">
+    <div class="panel-header">
+      <span class="panel-title">Draw Here</span>
+      <div class="model-selector">
+        <button class="model-btn active" data-model="lstm" onclick="switchModel('lstm')">LSTM</button>
+        <button class="model-btn" data-model="liquid" onclick="switchModel('liquid')">Liquid</button>
+      </div>
+    </div>
+    <div class="model-meta" id="modelMeta"></div>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="canvas-footer">
+      <span class="stroke-info" id="strokeInfo">Draw a syllable</span>
+      <div class="buttons">
+        <button class="btn-secondary" onclick="undoStroke()">↩ Undo</button>
+        <button class="btn-secondary" onclick="clearCanvas()">Clear</button>
+        <button class="btn-predict" id="predictBtn" onclick="predict()" disabled>Recognize</button>
+      </div>
+    </div>
+    <div class="status-bar" id="status"></div>
+  </div>
+
+  <!-- ===== RESULTS PANEL ===== -->
+  <div class="panel results-panel">
+    <span class="panel-title" style="margin-bottom:12px;display:block">Predictions</span>
+
+    <div id="topResult">
+      <div class="empty-state">
+        <div class="icon">✍️</div>
+        <div class="text">Draw and tap Recognize</div>
+      </div>
+    </div>
+
+    <div class="other-results" id="otherResults"></div>
+  </div>
+
+  <!-- ===== REFERENCE PANEL ===== -->
+  <div class="panel reference-panel">
+    <span class="panel-title" style="margin-bottom:8px;display:block">Syllable Reference</span>
+    <input type="text" class="search-box" id="searchBox"
+           placeholder="Search syllable or class #..."
+           oninput="filterSyllables()">
+    <div class="ref-count" id="refCount"></div>
+    <div class="syllable-grid" id="syllableGrid">
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="text">Loading syllables...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let strokes = [];
+let currentStroke = [];
+let isDrawing = false;
+let currentModel = 'lstm';
+let allSyllables = [];
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// Fix canvas resolution
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 3;
+  redrawCanvas();
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const colors = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#06b6d4','#ec4899','#14b8a6'];
+
+// ============================================================
+// DRAWING
+// ============================================================
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  if (e.touches) {
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+canvas.addEventListener('mousedown', e => startStroke(getPos(e)));
+canvas.addEventListener('mousemove', e => { if(isDrawing) continueStroke(getPos(e)); });
+canvas.addEventListener('mouseup', endStroke);
+canvas.addEventListener('mouseleave', endStroke);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); startStroke(getPos(e)); });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); continueStroke(getPos(e)); });
+canvas.addEventListener('touchend', e => { e.preventDefault(); endStroke(); });
+
+function startStroke(pos) {
+  isDrawing = true;
+  currentStroke = [{ x: pos.x, y: pos.y, t: performance.now() / 1000 }];
+  ctx.strokeStyle = colors[strokes.length % colors.length];
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+}
+
+function continueStroke(pos) {
+  currentStroke.push({ x: pos.x, y: pos.y, t: performance.now() / 1000 });
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+}
+
+function endStroke() {
+  if (!isDrawing) return;
+  isDrawing = false;
+  if (currentStroke.length > 1) {
+    strokes.push([...currentStroke]);
+    updateInfo();
+    document.getElementById('predictBtn').disabled = false;
+  }
+  currentStroke = [];
+}
+
+function undoStroke() {
+  if (!strokes.length) return;
+  strokes.pop();
+  redrawCanvas();
+  updateInfo();
+  if (!strokes.length) document.getElementById('predictBtn').disabled = true;
+}
+
+function clearCanvas() {
+  strokes = [];
+  currentStroke = [];
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('predictBtn').disabled = true;
+  updateInfo();
+  document.getElementById('status').textContent = '';
+  document.getElementById('topResult').innerHTML =
+    '<div class="empty-state"><div class="icon">✍️</div><div class="text">Draw and tap Recognize</div></div>';
+  document.getElementById('otherResults').innerHTML = '';
+}
+
+function redrawCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 3;
+  strokes.forEach((stroke, i) => {
+    ctx.strokeStyle = colors[i % colors.length];
+    ctx.beginPath();
+    ctx.moveTo(stroke[0].x, stroke[0].y);
+    stroke.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+  });
+}
+
+function updateInfo() {
+  const pts = strokes.reduce((s, st) => s + st.length, 0);
+  document.getElementById('strokeInfo').textContent =
+    strokes.length ? `${strokes.length} stroke${strokes.length>1?'s':''} · ${pts} points` : 'Draw a syllable';
+}
+
+// ============================================================
+// MODEL SWITCHING
+// ============================================================
+function switchModel(name) {
+  currentModel = name;
+  document.querySelectorAll('.model-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.model === name);
+  });
+  loadModelInfo();
+}
+
+async function loadModelInfo() {
+  try {
+    const res = await fetch('/models');
+    const data = await res.json();
+    const info = data[currentModel];
+    const meta = document.getElementById('modelMeta');
+    if (info && info.val_acc) {
+      meta.textContent = `Accuracy: ${info.val_acc}% · Top-5: ${info.val_top5}% · Epoch ${info.epoch}`;
+    } else if (info && info.status) {
+      meta.textContent = info.status;
+    } else {
+      meta.textContent = '';
+    }
+
+    // Mark unavailable models
+    document.querySelectorAll('.model-btn').forEach(b => {
+      const m = data[b.dataset.model];
+      if (m && m.status && m.status.includes('no checkpoint')) {
+        b.classList.add('unavailable');
+      } else {
+        b.classList.remove('unavailable');
+      }
+    });
+  } catch(e) {
+    console.error('Failed to load model info:', e);
+  }
+}
+
+// ============================================================
+// PREDICTION
+// ============================================================
+async function predict() {
+  if (!strokes.length) return;
+  const btn = document.getElementById('predictBtn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = 'Recognizing...';
+  status.className = 'status-bar loading';
+
+  try {
+    const res = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ strokes, model: currentModel })
+    });
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+    displayResults(data.predictions);
+    status.textContent = `Recognized with ${currentModel.toUpperCase()}`;
+    status.className = 'status-bar success';
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+    status.className = 'status-bar error';
+  }
+  btn.disabled = false;
+}
+
+function displayResults(predictions) {
+  if (!predictions || !predictions.length) return;
+
+  // Top result — big display
+  const top = predictions[0];
+  document.getElementById('topResult').innerHTML = `
+    <div class="top-prediction">
+      <div class="top-syllable">${top.syllable}</div>
+      <div class="top-confidence">${top.confidence}%</div>
+      <div class="top-class-id">Class #${top.class_id}</div>
+    </div>`;
+
+  // Other results
+  let html = '';
+  const maxConf = top.confidence;
+  for (let i = 1; i < Math.min(predictions.length, 10); i++) {
+    const p = predictions[i];
+    const barW = maxConf > 0 ? (p.confidence / maxConf) * 100 : 0;
+    html += `
+      <div class="result-row">
+        <span class="rr-rank">${i+1}</span>
+        <span class="rr-syllable">${p.syllable}</span>
+        <div class="rr-bar-wrap"><div class="rr-bar" style="width:${barW}%"></div></div>
+        <span class="rr-conf">${p.confidence}%</span>
+      </div>`;
+  }
+  document.getElementById('otherResults').innerHTML = html;
+}
+
+// ============================================================
+// SYLLABLE REFERENCE
+// ============================================================
+async function loadSyllables() {
+  try {
+    const res = await fetch('/syllables');
+    allSyllables = await res.json();
+    renderSyllables(allSyllables);
+  } catch (e) {
+    document.getElementById('syllableGrid').innerHTML =
+      '<div class="empty-state" style="grid-column:1/-1"><div class="text">Could not load syllables</div></div>';
+  }
+}
+
+function renderSyllables(list) {
+  document.getElementById('refCount').textContent = `${list.length} syllables`;
+  const grid = document.getElementById('syllableGrid');
+
+  // Render in chunks for performance
+  grid.innerHTML = '';
+  const fragment = document.createDocumentFragment();
+  list.forEach(s => {
+    const cell = document.createElement('div');
+    cell.className = 'syl-cell';
+    cell.innerHTML = `<span class="syl-char">${s.syllable}</span><span class="syl-id">#${s.class_id}</span>`;
+    fragment.appendChild(cell);
+  });
+  grid.appendChild(fragment);
+}
+
+function filterSyllables() {
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  if (!q) {
+    renderSyllables(allSyllables);
+    return;
+  }
+  const filtered = allSyllables.filter(s =>
+    s.syllable.includes(q) || String(s.class_id).includes(q)
+  );
+  renderSyllables(filtered);
+}
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return; // don't interfere with search box
+  if (e.key === 'Enter') predict();
+  if (e.key === 'Escape') clearCanvas();
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undoStroke(); }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+loadModelInfo();
+loadSyllables();
+
+</script>
+</body>
+</html>

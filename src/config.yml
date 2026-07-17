@@ -7,10 +7,10 @@
 
 # --- Paths ---
 paths:
-  strokes_dir: "data/strokes"
-  images_dir: "data/images"
-  labels_file: "data/labels.txt"
-  save_dir: "checkpoints"
+  strokes_dir: "../data/strokes"
+  images_dir: "../data/images"
+  labels_file: "../data/label/syl.txt"
+  save_dir: "../checkpoints"
 
 # --- General Training ---
 training:

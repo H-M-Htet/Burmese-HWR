@@ -1,0 +1,80 @@
+# ============================================================
+# Training Configuration
+# ============================================================
+# Change parameters here, not in the code.
+# Run: python train.py --config config.yaml
+# ============================================================
+
+# --- Paths ---
+paths:
+  strokes_dir: "data/strokes"
+  images_dir: "data/images"
+  labels_file: "data/labels.txt"
+  save_dir: "checkpoints"
+
+# --- General Training ---
+training:
+  seed: 42
+  num_epochs: 100
+  patience: 25             # early stopping patience
+  val_ratio: 0.25          # 25% for validation
+  oversample: 5            # repeat training data N times per epoch
+  grad_clip: 0.5           # gradient clipping max norm
+
+# --- Which models to train ---
+# Set to false to skip a model
+models:
+  lstm: true
+  liquid: false            # slow — set true when ready
+  simple_cnn: true
+  resnet18: true
+
+# --- LSTM ---
+lstm:
+  hidden_size: 128
+  num_layers: 2
+  dropout: 0.4             # increased from 0.3 to reduce overfitting
+  lr: 0.001
+  batch_size: 32
+  max_len: 300
+
+# --- Liquid (LTC) ---
+liquid:
+  ltc_units: 128
+  dropout: 0.3
+  lr: 0.001
+  batch_size: 32
+  max_len: 300
+
+# --- SimpleCNN ---
+simple_cnn:
+  dropout: 0.3
+  lr: 0.0003               # lowered from 0.001 to fix exploding gradients
+  batch_size: 64
+  img_size: 64
+
+# --- ResNet18 ---
+resnet18:
+  dropout: 0.3
+  lr: 0.0001
+  batch_size: 64
+  img_size: 64
+  pretrained: true
+  freeze_layers: true      # freeze early layers to prevent overfitting
+
+# --- Augmentation ---
+augmentation:
+  intensity: 1.0           # master dial: 0.5=mild, 1.0=normal, 1.5=strong
+  # Stroke augmentation
+  jitter_sigma: 2.0
+  rotation_max: 15
+  scale_sigma: 0.15
+  translate_sigma: 10
+  speed_warp_sigma: 0.3
+  point_dropout_rate: 0.1
+  # Image augmentation
+  img_rotation: 15
+  img_translate: 0.1
+  img_scale_min: 0.85
+  img_scale_max: 1.15
+  img_perspective: 0.2

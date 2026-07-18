@@ -46,6 +46,16 @@ liquid:
   batch_size: 32
   max_len: 300
 
+# --- Transformer ---
+transformer:
+  d_model: 128             # embedding dimension
+  nhead: 4                 # attention heads
+  num_layers: 3            # encoder layers
+  dropout: 0.3
+  lr: 0.0005               # slightly lower than LSTM (attention is sensitive)
+  batch_size: 32
+  max_len: 300
+
 # --- SimpleCNN ---
 simple_cnn:
   dropout: 0.3

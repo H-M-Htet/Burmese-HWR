@@ -3,545 +3,386 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Myanmar Handwriting Recognition</title>
+<title>Myanmar HWR — Model Comparison</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0f172a;
-    color: #e2e8f0;
-    min-height: 100vh;
-    padding: 16px;
+    background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 16px;
   }
 
-  .header { text-align: center; margin-bottom: 20px; }
-  .header h1 { font-size: 1.4rem; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
-  .header .subtitle { font-size: 0.82rem; color: #64748b; }
+  .header { text-align: center; margin-bottom: 16px; }
+  .header h1 { font-size: 1.4rem; font-weight: 700; color: #f1f5f9; }
+  .header .sub { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
 
-  .main-layout {
-    display: flex; gap: 20px; max-width: 1200px;
-    margin: 0 auto; flex-wrap: wrap; justify-content: center;
+  .top-row {
+    display: flex; gap: 16px; max-width: 1200px;
+    margin: 0 auto 16px; flex-wrap: wrap; justify-content: center;
   }
 
   .panel {
     background: #1e293b; border: 1px solid #334155;
-    border-radius: 14px; padding: 16px;
-  }
-
-  .panel-header {
-    display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 10px;
+    border-radius: 12px; padding: 14px;
   }
 
   .panel-title {
-    font-size: 0.9rem; font-weight: 600; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: 0.05em;
+    font-size: 0.78rem; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;
   }
-
-  /* --- Model Selector --- */
-  .draw-panel { width: 480px; }
-
-  .model-groups {
-    display: flex; flex-direction: column; gap: 6px;
-    margin-bottom: 12px;
-  }
-
-  .model-group {
-    display: flex; align-items: center; gap: 8px;
-  }
-
-  .group-label {
-    font-size: 0.68rem; color: #475569; min-width: 52px;
-    text-transform: uppercase; letter-spacing: 0.05em;
-  }
-
-  .model-btns {
-    display: flex; gap: 4px; background: #0f172a;
-    border-radius: 8px; padding: 3px;
-  }
-
-  .model-btn {
-    padding: 5px 12px; border: none; border-radius: 6px;
-    font-size: 0.75rem; font-weight: 600; cursor: pointer;
-    background: transparent; color: #64748b; transition: all 0.15s;
-    position: relative;
-  }
-
-  .model-btn.active { background: #3b82f6; color: white; }
-  .model-btn.active.image-model { background: #22c55e; }
-  .model-btn:hover:not(.active) { color: #e2e8f0; }
-  .model-btn.unavailable { opacity: 0.35; cursor: not-allowed; }
-
-  .model-btn .badge {
-    position: absolute; top: -4px; right: -4px;
-    font-size: 0.55rem; padding: 1px 4px; border-radius: 4px;
-    background: #475569; color: #e2e8f0;
-  }
-
-  .model-meta {
-    font-size: 0.72rem; color: #64748b;
-    text-align: center; margin-bottom: 10px; min-height: 32px;
-    line-height: 1.5;
-  }
-
-  .model-type-badge {
-    display: inline-block; padding: 1px 8px; border-radius: 4px;
-    font-size: 0.65rem; font-weight: 700; margin-right: 4px;
-  }
-
-  .badge-stroke { background: #1e3a5f; color: #60a5fa; }
-  .badge-image { background: #14532d; color: #4ade80; }
 
   /* --- Canvas --- */
+  .draw-panel { width: 400px; }
+
   canvas {
-    width: 100%; height: 300px; background: #0f172a;
+    width: 100%; height: 260px; background: #0f172a;
     border: 2px solid #334155; border-radius: 10px;
     cursor: crosshair; touch-action: none; display: block;
   }
 
   .canvas-footer {
     display: flex; justify-content: space-between;
-    align-items: center; margin-top: 10px;
+    align-items: center; margin-top: 8px;
   }
 
-  .stroke-info { font-size: 0.78rem; color: #475569; }
-
-  .buttons { display: flex; gap: 6px; }
+  .stroke-info { font-size: 0.75rem; color: #475569; }
+  .buttons { display: flex; gap: 5px; }
 
   button {
-    padding: 8px 16px; border: none; border-radius: 7px;
-    font-size: 0.82rem; font-weight: 600; cursor: pointer;
-    transition: all 0.15s;
+    padding: 7px 14px; border: none; border-radius: 7px;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
   }
 
-  .btn-predict { background: #3b82f6; color: white; padding: 8px 22px; }
-  .btn-predict:hover { background: #2563eb; }
-  .btn-predict:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
-  .btn-secondary { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
-  .btn-secondary:hover { background: #334155; color: #e2e8f0; }
+  .btn-go { background: #3b82f6; color: white; padding: 7px 20px; }
+  .btn-go:hover { background: #2563eb; }
+  .btn-go:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+  .btn-sec { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+  .btn-sec:hover { background: #334155; }
 
-  .status-bar {
-    text-align: center; font-size: 0.78rem;
-    margin-top: 6px; min-height: 18px;
-  }
-  .status-bar.error { color: #f87171; }
-  .status-bar.success { color: #4ade80; }
-  .status-bar.loading { color: #fbbf24; }
-
-  /* --- Results --- */
-  .results-panel { width: 280px; display: flex; flex-direction: column; }
-
-  .top-prediction {
-    text-align: center; padding: 20px 10px; margin-bottom: 12px;
-    background: #0f172a; border-radius: 10px;
-  }
-
-  .top-syllable { font-size: 3.5rem; line-height: 1.2; color: #f1f5f9; }
-  .top-confidence { font-size: 0.9rem; color: #3b82f6; font-weight: 600; margin-top: 4px; }
-  .top-class-id { font-size: 0.72rem; color: #475569; margin-top: 2px; }
-  .top-model-badge { margin-top: 6px; }
-
-  .result-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 7px 10px; border-radius: 8px;
-    margin-bottom: 4px; background: #0f172a;
-  }
-  .result-row:hover { background: #1a2744; }
-  .rr-rank { font-size: 0.7rem; color: #475569; min-width: 16px; }
-  .rr-syllable { font-size: 1.3rem; min-width: 50px; text-align: center; }
-  .rr-bar-wrap { flex: 1; height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; }
-  .rr-bar { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
-  .bar-stroke { background: #3b82f6; }
-  .bar-image { background: #22c55e; }
-  .rr-conf { font-size: 0.72rem; color: #64748b; min-width: 42px; text-align: right; }
-
-  .empty-state { text-align: center; padding: 40px 20px; color: #334155; }
-  .empty-state .icon { font-size: 2.5rem; margin-bottom: 8px; }
-  .empty-state .text { font-size: 0.85rem; }
+  .status { text-align: center; font-size: 0.75rem; margin-top: 6px; min-height: 16px; }
+  .status.ok { color: #4ade80; }
+  .status.err { color: #f87171; }
+  .status.wait { color: #fbbf24; }
 
   /* --- Reference --- */
-  .reference-panel { width: 300px; max-height: 520px; display: flex; flex-direction: column; }
+  .ref-panel { width: 260px; max-height: 380px; display: flex; flex-direction: column; }
 
   .search-box {
-    width: 100%; padding: 8px 12px; border: 1px solid #334155;
-    border-radius: 8px; background: #0f172a; color: #e2e8f0;
-    font-size: 0.85rem; margin-bottom: 10px; outline: none;
+    width: 100%; padding: 7px 10px; border: 1px solid #334155; border-radius: 7px;
+    background: #0f172a; color: #e2e8f0; font-size: 0.82rem; outline: none; margin-bottom: 8px;
   }
   .search-box:focus { border-color: #3b82f6; }
   .search-box::placeholder { color: #475569; }
 
-  .syllable-grid {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
-    overflow-y: auto; flex: 1; padding-right: 4px;
+  .ref-count { font-size: 0.7rem; color: #475569; margin-bottom: 6px; }
+
+  .syl-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px;
+    overflow-y: auto; flex: 1;
   }
-  .syllable-grid::-webkit-scrollbar { width: 5px; }
-  .syllable-grid::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  .syl-grid::-webkit-scrollbar { width: 4px; }
+  .syl-grid::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
 
   .syl-cell {
     display: flex; flex-direction: column; align-items: center;
-    padding: 6px 2px; border-radius: 6px; background: #0f172a;
-    cursor: default; transition: background 0.15s;
+    padding: 4px 2px; border-radius: 5px; background: #0f172a;
   }
   .syl-cell:hover { background: #1a2744; }
-  .syl-char { font-size: 1.1rem; color: #e2e8f0; line-height: 1.3; }
-  .syl-id { font-size: 0.6rem; color: #475569; }
-  .ref-count { font-size: 0.72rem; color: #475569; margin-bottom: 8px; }
+  .syl-char { font-size: 1rem; color: #e2e8f0; }
+  .syl-id { font-size: 0.55rem; color: #475569; }
+
+  /* --- Results Grid --- */
+  .results-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px; max-width: 1200px; margin: 0 auto;
+  }
+
+  .model-card {
+    background: #1e293b; border: 1px solid #334155;
+    border-radius: 12px; padding: 14px; transition: border-color 0.2s;
+  }
+
+  .model-card.best { border-color: #22c55e; }
+
+  .mc-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .mc-name { font-size: 0.9rem; font-weight: 700; }
+  .mc-name.stroke { color: #60a5fa; }
+  .mc-name.image { color: #4ade80; }
+
+  .mc-badge {
+    font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+  }
+  .mc-badge.stroke { background: #1e3a5f; color: #60a5fa; }
+  .mc-badge.image { background: #14532d; color: #4ade80; }
+
+  .mc-meta { font-size: 0.68rem; color: #475569; margin-bottom: 10px; }
+
+  .mc-top {
+    text-align: center; padding: 12px 8px;
+    background: #0f172a; border-radius: 8px; margin-bottom: 8px;
+  }
+
+  .mc-top-syl { font-size: 2.8rem; line-height: 1.1; color: #f1f5f9; }
+  .mc-top-conf { font-size: 0.85rem; font-weight: 700; margin-top: 4px; }
+  .mc-top-conf.stroke { color: #60a5fa; }
+  .mc-top-conf.image { color: #4ade80; }
+  .mc-top-class { font-size: 0.65rem; color: #475569; margin-top: 2px; }
+
+  .mc-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border-radius: 5px; margin-bottom: 3px;
+    background: #0f172a;
+  }
+
+  .mc-row-rank { font-size: 0.65rem; color: #475569; min-width: 14px; }
+  .mc-row-syl { font-size: 1.1rem; min-width: 40px; text-align: center; }
+  .mc-row-bar { flex: 1; height: 4px; background: #1e293b; border-radius: 2px; overflow: hidden; }
+  .mc-row-fill { height: 100%; border-radius: 2px; }
+  .mc-row-fill.stroke { background: #3b82f6; }
+  .mc-row-fill.image { background: #22c55e; }
+  .mc-row-conf { font-size: 0.65rem; color: #64748b; min-width: 36px; text-align: right; }
+
+  .mc-footer { font-size: 0.65rem; color: #475569; text-align: right; margin-top: 6px; }
+
+  .mc-empty { text-align: center; padding: 30px; color: #334155; font-size: 0.85rem; }
+
+  .best-label {
+    display: inline-block; font-size: 0.6rem; font-weight: 700;
+    background: #14532d; color: #4ade80; padding: 1px 6px; border-radius: 4px;
+    margin-left: 6px;
+  }
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Myanmar Handwriting Recognition</h1>
-  <p class="subtitle">Draw a syllable → compare 4 different models</p>
+  <p class="sub">Draw once — compare all models side by side</p>
 </div>
 
-<div class="main-layout">
-
-  <!-- ===== DRAW PANEL ===== -->
+<div class="top-row">
   <div class="panel draw-panel">
-    <div class="panel-header">
-      <span class="panel-title">Draw Here</span>
-    </div>
-
-    <!-- Model selector: 2 rows -->
-    <div class="model-groups">
-      <div class="model-group">
-        <span class="group-label">Stroke</span>
-        <div class="model-btns">
-          <button class="model-btn active" data-model="lstm" data-type="stroke" onclick="switchModel('lstm')">
-            LSTM
-          </button>
-          <button class="model-btn" data-model="liquid" data-type="stroke" onclick="switchModel('liquid')">
-            Liquid
-          </button>
-        </div>
-      </div>
-      <div class="model-group">
-        <span class="group-label">Image</span>
-        <div class="model-btns">
-          <button class="model-btn" data-model="simple_cnn" data-type="image" onclick="switchModel('simple_cnn')">
-            SimpleCNN
-          </button>
-          <button class="model-btn" data-model="resnet18" data-type="image" onclick="switchModel('resnet18')">
-            ResNet18
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="model-meta" id="modelMeta"></div>
+    <div class="panel-title">Draw</div>
     <canvas id="canvas"></canvas>
-
     <div class="canvas-footer">
-      <span class="stroke-info" id="strokeInfo">Draw a syllable</span>
+      <span class="stroke-info" id="info">Draw a syllable</span>
       <div class="buttons">
-        <button class="btn-secondary" onclick="undoStroke()">↩ Undo</button>
-        <button class="btn-secondary" onclick="clearCanvas()">Clear</button>
-        <button class="btn-predict" id="predictBtn" onclick="predict()" disabled>Recognize</button>
+        <button class="btn-sec" onclick="undo()">↩ Undo</button>
+        <button class="btn-sec" onclick="clearCanvas()">Clear</button>
+        <button class="btn-go" id="goBtn" onclick="recognizeAll()" disabled>Compare All</button>
       </div>
     </div>
-    <div class="status-bar" id="status"></div>
+    <div class="status" id="status"></div>
   </div>
 
-  <!-- ===== RESULTS PANEL ===== -->
-  <div class="panel results-panel">
-    <span class="panel-title" style="margin-bottom:12px;display:block">Predictions</span>
-    <div id="topResult">
-      <div class="empty-state">
-        <div class="icon">✍️</div>
-        <div class="text">Draw and tap Recognize</div>
-      </div>
-    </div>
-    <div class="other-results" id="otherResults"></div>
-  </div>
-
-  <!-- ===== REFERENCE PANEL ===== -->
-  <div class="panel reference-panel">
-    <span class="panel-title" style="margin-bottom:8px;display:block">Syllable Reference</span>
-    <input type="text" class="search-box" id="searchBox"
-           placeholder="Search syllable or class #..." oninput="filterSyllables()">
+  <div class="panel ref-panel">
+    <div class="panel-title">Syllables</div>
+    <input class="search-box" id="search" placeholder="Search..." oninput="filter()">
     <div class="ref-count" id="refCount"></div>
-    <div class="syllable-grid" id="syllableGrid">
-      <div class="empty-state" style="grid-column:1/-1">
-        <div class="text">Loading...</div>
-      </div>
-    </div>
+    <div class="syl-grid" id="sylGrid"></div>
   </div>
+</div>
 
+<div class="results-row" id="results">
+  <div class="model-card"><div class="mc-empty">Draw a syllable and tap "Compare All"</div></div>
 </div>
 
 <script>
-// ============================================================
-// STATE
-// ============================================================
-let strokes = [];
-let currentStroke = [];
-let isDrawing = false;
-let currentModel = 'lstm';
-let currentModelType = 'stroke';
-let allSyllables = [];
-
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const colors = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#06b6d4','#ec4899','#14b8a6'];
+let strokes = [], cur = [], drawing = false, allSyl = [];
+const colors = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#06b6d4'];
 
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * window.devicePixelRatio;
-  canvas.height = rect.height * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+function resize() {
+  const r = canvas.getBoundingClientRect();
+  canvas.width = r.width * devicePixelRatio;
+  canvas.height = r.height * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 3;
-  redrawCanvas();
+  redraw();
 }
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+resize(); window.addEventListener('resize', resize);
 
-// ============================================================
-// DRAWING
-// ============================================================
-function getPos(e) {
-  const rect = canvas.getBoundingClientRect();
-  if (e.touches) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+function pos(e) {
+  const r = canvas.getBoundingClientRect();
+  if (e.touches) return {x: e.touches[0].clientX-r.left, y: e.touches[0].clientY-r.top};
+  return {x: e.clientX-r.left, y: e.clientY-r.top};
 }
 
-canvas.addEventListener('mousedown', e => startStroke(getPos(e)));
-canvas.addEventListener('mousemove', e => { if(isDrawing) continueStroke(getPos(e)); });
-canvas.addEventListener('mouseup', endStroke);
-canvas.addEventListener('mouseleave', endStroke);
-canvas.addEventListener('touchstart', e => { e.preventDefault(); startStroke(getPos(e)); });
-canvas.addEventListener('touchmove', e => { e.preventDefault(); continueStroke(getPos(e)); });
-canvas.addEventListener('touchend', e => { e.preventDefault(); endStroke(); });
+canvas.addEventListener('mousedown', e => start(pos(e)));
+canvas.addEventListener('mousemove', e => { if(drawing) move(pos(e)); });
+canvas.addEventListener('mouseup', end);
+canvas.addEventListener('mouseleave', end);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); start(pos(e)); });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); move(pos(e)); });
+canvas.addEventListener('touchend', e => { e.preventDefault(); end(); });
 
-function startStroke(pos) {
-  isDrawing = true;
-  currentStroke = [{ x: pos.x, y: pos.y, t: performance.now() / 1000 }];
+function start(p) {
+  drawing = true; cur = [{x:p.x, y:p.y, t:performance.now()/1000}];
   ctx.strokeStyle = colors[strokes.length % colors.length];
-  ctx.beginPath(); ctx.moveTo(pos.x, pos.y);
+  ctx.beginPath(); ctx.moveTo(p.x, p.y);
 }
-
-function continueStroke(pos) {
-  currentStroke.push({ x: pos.x, y: pos.y, t: performance.now() / 1000 });
-  ctx.lineTo(pos.x, pos.y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(pos.x, pos.y);
+function move(p) {
+  cur.push({x:p.x, y:p.y, t:performance.now()/1000});
+  ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y);
 }
-
-function endStroke() {
-  if (!isDrawing) return;
-  isDrawing = false;
-  if (currentStroke.length > 1) {
-    strokes.push([...currentStroke]);
-    updateInfo();
-    document.getElementById('predictBtn').disabled = false;
-  }
-  currentStroke = [];
+function end() {
+  if (!drawing) return; drawing = false;
+  if (cur.length > 1) { strokes.push([...cur]); upInfo(); goBtn.disabled = false; }
+  cur = [];
 }
-
-function undoStroke() {
-  if (!strokes.length) return;
-  strokes.pop(); redrawCanvas(); updateInfo();
-  if (!strokes.length) document.getElementById('predictBtn').disabled = true;
+function undo() {
+  if (!strokes.length) return; strokes.pop(); redraw(); upInfo();
+  if (!strokes.length) goBtn.disabled = true;
 }
-
 function clearCanvas() {
-  strokes = []; currentStroke = [];
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  document.getElementById('predictBtn').disabled = true;
-  updateInfo();
+  strokes = []; cur = []; ctx.clearRect(0,0,canvas.width,canvas.height);
+  goBtn.disabled = true; upInfo();
   document.getElementById('status').textContent = '';
-  document.getElementById('topResult').innerHTML =
-    '<div class="empty-state"><div class="icon">✍️</div><div class="text">Draw and tap Recognize</div></div>';
-  document.getElementById('otherResults').innerHTML = '';
+  document.getElementById('results').innerHTML =
+    '<div class="model-card"><div class="mc-empty">Draw a syllable and tap "Compare All"</div></div>';
 }
-
-function redrawCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 3;
-  strokes.forEach((stroke, i) => {
-    ctx.strokeStyle = colors[i % colors.length];
-    ctx.beginPath(); ctx.moveTo(stroke[0].x, stroke[0].y);
-    stroke.forEach(p => ctx.lineTo(p.x, p.y));
-    ctx.stroke();
+function redraw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=3;
+  strokes.forEach((s,i) => {
+    ctx.strokeStyle = colors[i%colors.length];
+    ctx.beginPath(); ctx.moveTo(s[0].x, s[0].y);
+    s.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke();
   });
 }
-
-function updateInfo() {
-  const pts = strokes.reduce((s, st) => s + st.length, 0);
-  document.getElementById('strokeInfo').textContent =
-    strokes.length ? `${strokes.length} stroke${strokes.length>1?'s':''} · ${pts} points` : 'Draw a syllable';
+function upInfo() {
+  const pts = strokes.reduce((s,st) => s+st.length, 0);
+  document.getElementById('info').textContent =
+    strokes.length ? `${strokes.length} stroke${strokes.length>1?'s':''} · ${pts} pts` : 'Draw a syllable';
 }
 
 // ============================================================
-// MODEL SWITCHING
+// RECOGNIZE ALL
 // ============================================================
-function switchModel(name) {
-  const btn = document.querySelector(`[data-model="${name}"]`);
-  if (btn && btn.classList.contains('unavailable')) return;
-
-  currentModel = name;
-  currentModelType = btn ? btn.dataset.type : 'stroke';
-
-  document.querySelectorAll('.model-btn').forEach(b => {
-    b.classList.remove('active');
-    b.classList.remove('image-model');
-  });
-  btn.classList.add('active');
-  if (currentModelType === 'image') btn.classList.add('image-model');
-
-  loadModelInfo();
-}
-
-async function loadModelInfo() {
-  try {
-    const res = await fetch('/models');
-    const data = await res.json();
-    const info = data[currentModel];
-    const meta = document.getElementById('modelMeta');
-
-    if (info && info.val_acc) {
-      const typeBadge = info.type === 'stroke'
-        ? '<span class="model-type-badge badge-stroke">Stroke-based</span>'
-        : '<span class="model-type-badge badge-image">Image-based</span>';
-      meta.innerHTML = `${typeBadge} ${info.params || ''} params<br>`
-        + `Accuracy: ${info.val_acc}% · Top-5: ${info.val_top5}% · Epoch ${info.epoch}`;
-    } else if (info && info.status) {
-      const typeBadge = info.type === 'stroke'
-        ? '<span class="model-type-badge badge-stroke">Stroke-based</span>'
-        : '<span class="model-type-badge badge-image">Image-based</span>';
-      meta.innerHTML = `${typeBadge} ${info.status}`;
-    } else {
-      meta.textContent = '';
-    }
-
-    // Mark unavailable
-    document.querySelectorAll('.model-btn').forEach(b => {
-      const m = data[b.dataset.model];
-      if (!m || (m.status && m.status.includes('no checkpoint'))) {
-        b.classList.add('unavailable');
-      } else {
-        b.classList.remove('unavailable');
-      }
-    });
-  } catch(e) { console.error('Model info error:', e); }
-}
-
-// ============================================================
-// PREDICTION
-// ============================================================
-async function predict() {
+async function recognizeAll() {
   if (!strokes.length) return;
-  const btn = document.getElementById('predictBtn');
-  const status = document.getElementById('status');
-  btn.disabled = true;
-  status.textContent = `Recognizing with ${currentModel.toUpperCase()}...`;
-  status.className = 'status-bar loading';
+  const st = document.getElementById('status');
+  goBtn.disabled = true;
+  st.textContent = 'Running all models...'; st.className = 'status wait';
 
   try {
-    const res = await fetch('/predict', {
+    const res = await fetch('/predict_all', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ strokes, model: currentModel })
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({strokes})
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    displayResults(data.predictions, data.model_type);
-
-    const modelLabel = currentModel.toUpperCase();
-    const typeLabel = currentModelType === 'stroke' ? 'stroke data' : 'rendered image';
-    status.textContent = `Recognized with ${modelLabel} (${typeLabel})`;
-    status.className = 'status-bar success';
-  } catch (e) {
-    status.textContent = 'Error: ' + e.message;
-    status.className = 'status-bar error';
+    showResults(data);
+    const count = Object.keys(data).length;
+    st.textContent = `Compared ${count} models`; st.className = 'status ok';
+  } catch(e) {
+    st.textContent = 'Error: '+e.message; st.className = 'status err';
   }
-  btn.disabled = false;
+  goBtn.disabled = false;
 }
 
-function displayResults(predictions, modelType) {
-  if (!predictions || !predictions.length) return;
+function showResults(data) {
+  const el = document.getElementById('results');
 
-  const top = predictions[0];
-  const barClass = modelType === 'image' ? 'bar-image' : 'bar-stroke';
-  const badgeClass = modelType === 'image' ? 'badge-image' : 'badge-stroke';
-  const badgeText = modelType === 'image' ? 'Image' : 'Stroke';
+  // Find best model
+  let bestName = '', bestConf = 0;
+  for (const [name, r] of Object.entries(data)) {
+    if (r.predictions.length && r.predictions[0].confidence > bestConf) {
+      bestConf = r.predictions[0].confidence;
+      bestName = name;
+    }
+  }
 
-  document.getElementById('topResult').innerHTML = `
-    <div class="top-prediction">
-      <div class="top-syllable">${top.syllable}</div>
-      <div class="top-confidence">${top.confidence}%</div>
-      <div class="top-class-id">Class #${top.class_id}</div>
-      <div class="top-model-badge">
-        <span class="model-type-badge ${badgeClass}">${badgeText} · ${currentModel.toUpperCase()}</span>
-      </div>
-    </div>`;
+  // Model display order
+  const order = ['lstm', 'liquid', 'simple_cnn', 'resnet18'];
+  const displayNames = {lstm:'LSTM', liquid:'Liquid (LTC)', simple_cnn:'SimpleCNN', resnet18:'ResNet18'};
 
   let html = '';
-  const maxConf = top.confidence;
-  for (let i = 1; i < Math.min(predictions.length, 10); i++) {
-    const p = predictions[i];
-    const barW = maxConf > 0 ? (p.confidence / maxConf) * 100 : 0;
-    html += `
-      <div class="result-row">
-        <span class="rr-rank">${i+1}</span>
-        <span class="rr-syllable">${p.syllable}</span>
-        <div class="rr-bar-wrap"><div class="rr-bar ${barClass}" style="width:${barW}%"></div></div>
-        <span class="rr-conf">${p.confidence}%</span>
-      </div>`;
+  for (const name of order) {
+    if (!data[name]) continue;
+    const r = data[name];
+    const type = r.type;
+    const preds = r.predictions;
+    const isBest = name === bestName;
+
+    html += `<div class="model-card${isBest ? ' best' : ''}">`;
+    html += `<div class="mc-header">`;
+    html += `<span class="mc-name ${type}">${displayNames[name]}${isBest ? '<span class="best-label">BEST</span>' : ''}</span>`;
+    html += `<span class="mc-badge ${type}">${type}</span>`;
+    html += `</div>`;
+
+    if (r.info && r.info.val_acc) {
+      html += `<div class="mc-meta">Train acc: ${r.info.val_acc}% · ${r.info.params} params</div>`;
+    }
+
+    if (preds.length) {
+      const top = preds[0];
+      html += `<div class="mc-top">`;
+      html += `<div class="mc-top-syl">${top.syllable}</div>`;
+      html += `<div class="mc-top-conf ${type}">${top.confidence}%</div>`;
+      html += `<div class="mc-top-class">Class #${top.class_id}</div>`;
+      html += `</div>`;
+
+      const maxC = top.confidence;
+      for (let i = 1; i < Math.min(preds.length, 5); i++) {
+        const p = preds[i];
+        const w = maxC > 0 ? (p.confidence/maxC)*100 : 0;
+        html += `<div class="mc-row">`;
+        html += `<span class="mc-row-rank">${i+1}</span>`;
+        html += `<span class="mc-row-syl">${p.syllable}</span>`;
+        html += `<div class="mc-row-bar"><div class="mc-row-fill ${type}" style="width:${w}%"></div></div>`;
+        html += `<span class="mc-row-conf">${p.confidence}%</span>`;
+        html += `</div>`;
+      }
+    }
+
+    html += `<div class="mc-footer">${r.inference_ms}ms inference</div>`;
+    html += `</div>`;
   }
-  document.getElementById('otherResults').innerHTML = html;
+
+  el.innerHTML = html;
 }
 
 // ============================================================
 // SYLLABLE REFERENCE
 // ============================================================
-async function loadSyllables() {
+async function loadSyl() {
   try {
-    const res = await fetch('/syllables');
-    allSyllables = await res.json();
-    renderSyllables(allSyllables);
-  } catch (e) {
-    document.getElementById('syllableGrid').innerHTML =
-      '<div class="empty-state" style="grid-column:1/-1"><div class="text">Could not load</div></div>';
-  }
+    const r = await fetch('/syllables'); allSyl = await r.json(); renderSyl(allSyl);
+  } catch(e) {}
 }
-
-function renderSyllables(list) {
+function renderSyl(list) {
   document.getElementById('refCount').textContent = `${list.length} syllables`;
-  const grid = document.getElementById('syllableGrid');
-  grid.innerHTML = '';
-  const frag = document.createDocumentFragment();
+  const g = document.getElementById('sylGrid');
+  g.innerHTML = '';
+  const f = document.createDocumentFragment();
   list.forEach(s => {
-    const cell = document.createElement('div');
-    cell.className = 'syl-cell';
-    cell.innerHTML = `<span class="syl-char">${s.syllable}</span><span class="syl-id">#${s.class_id}</span>`;
-    frag.appendChild(cell);
+    const c = document.createElement('div'); c.className = 'syl-cell';
+    c.innerHTML = `<span class="syl-char">${s.syllable}</span><span class="syl-id">#${s.class_id}</span>`;
+    f.appendChild(c);
   });
-  grid.appendChild(frag);
+  g.appendChild(f);
+}
+function filter() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  renderSyl(q ? allSyl.filter(s => s.syllable.includes(q) || String(s.class_id).includes(q)) : allSyl);
 }
 
-function filterSyllables() {
-  const q = document.getElementById('searchBox').value.trim().toLowerCase();
-  if (!q) { renderSyllables(allSyllables); return; }
-  renderSyllables(allSyllables.filter(s => s.syllable.includes(q) || String(s.class_id).includes(q)));
-}
-
-// ============================================================
-// KEYBOARD
-// ============================================================
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
-  if (e.key === 'Enter') predict();
+  if (e.key === 'Enter') recognizeAll();
   if (e.key === 'Escape') clearCanvas();
-  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undoStroke(); }
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
 });
 
-// ============================================================
-// INIT
-// ============================================================
-loadModelInfo();
-loadSyllables();
+loadSyl();
 </script>
 </body>
 </html>

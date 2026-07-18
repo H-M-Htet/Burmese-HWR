@@ -8,7 +8,7 @@ data/strokes/
 data/images/
 
 # Keep labels.txt (small, needed by server)
-!data/syl.txt
+!data/label/syl.txt
 
 # Trained models (large .pt files)
 checkpoints/

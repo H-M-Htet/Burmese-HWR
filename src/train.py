@@ -383,6 +383,92 @@ class ResNetClassifier(nn.Module):
         return self.resnet(x)
 
 
+class TransformerClassifier(nn.Module):
+    """
+    Small Transformer encoder for stroke sequence classification.
+
+    How it works:
+      1. Linear projection: 8 features → d_model dimensions
+      2. Positional encoding: tells Transformer the order of points
+      3. Transformer encoder: self-attention captures relationships
+         between ALL points simultaneously (unlike LSTM which is sequential)
+      4. CLS token pooling: a learnable token aggregates the full sequence
+      5. FC classifier → 1000 classes
+
+    Key difference from LSTM:
+      - LSTM processes left→right (or bidirectional)
+      - Transformer sees ALL points at once via self-attention
+      - Faster training (parallelizable) but needs positional encoding
+    """
+    def __init__(self, num_classes, d_model=128, nhead=4, num_layers=3, dropout=0.3, max_len=400):
+        super().__init__()
+
+        # Project 8 input features to d_model dimensions
+        self.input_proj = nn.Sequential(
+            nn.Linear(8, d_model),
+            nn.LayerNorm(d_model),
+        )
+
+        # Learnable positional encoding
+        self.pos_encoding = nn.Parameter(torch.randn(1, max_len + 1, d_model) * 0.02)
+
+        # Learnable CLS token (aggregates the whole sequence)
+        self.cls_token = nn.Parameter(torch.randn(1, 1, d_model) * 0.02)
+
+        # Transformer encoder
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model,
+            nhead=nhead,
+            dim_feedforward=d_model * 4,
+            dropout=dropout,
+            activation='gelu',
+            batch_first=True,
+            norm_first=True,
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+
+        # Classifier
+        self.classifier = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Dropout(dropout),
+            nn.Linear(d_model, 256),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, num_classes),
+        )
+
+    def forward(self, x, lengths=None):
+        B, T, _ = x.shape
+
+        # Project input
+        x = self.input_proj(x)  # (B, T, d_model)
+
+        # Prepend CLS token
+        cls = self.cls_token.expand(B, -1, -1)  # (B, 1, d_model)
+        x = torch.cat([cls, x], dim=1)  # (B, T+1, d_model)
+
+        # Add positional encoding
+        x = x + self.pos_encoding[:, :T+1, :]
+
+        # Create padding mask (True = ignore)
+        if lengths is not None:
+            lengths_t = torch.tensor(lengths) if not isinstance(lengths, torch.Tensor) else lengths
+            # +1 for CLS token (never masked)
+            mask = torch.zeros(B, T+1, dtype=torch.bool, device=x.device)
+            for i in range(B):
+                mask[i, lengths_t[i]+1:] = True  # mask after actual length + CLS
+        else:
+            mask = None
+
+        # Transformer encoder
+        x = self.transformer(x, src_key_padding_mask=mask)
+
+        # Take CLS token output (first position)
+        cls_out = x[:, 0, :]  # (B, d_model)
+
+        return self.classifier(cls_out)
+
+
 # ============================================================
 # TRAINER
 # ============================================================
@@ -523,7 +609,7 @@ class AugImageSubset(Dataset):
 # ============================================================
 
 def plot_results(save_dir):
-    colors = {'lstm':'#FF4444','liquid':'#4444FF','simple_cnn':'#44AA44','resnet18':'#FF8800'}
+    colors = {'lstm':'#FF4444','liquid':'#4444FF','transformer':'#9333ea','simple_cnn':'#44AA44','resnet18':'#FF8800'}
     histories = {}
     for name in colors:
         p = os.path.join(save_dir, f"{name}_history.json")
@@ -644,6 +730,10 @@ def main():
         elif model_name == 'resnet18':
             model = ResNetClassifier(num_classes, mcfg.get('dropout', 0.3),
                                      mcfg.get('pretrained', True), mcfg.get('freeze_layers', False))
+        elif model_name == 'transformer':
+            model = TransformerClassifier(num_classes, d_model=mcfg.get('d_model', 128),
+                                          nhead=mcfg.get('nhead', 4), num_layers=mcfg.get('num_layers', 3),
+                                          dropout=mcfg.get('dropout', 0.3), max_len=mcfg.get('max_len', 400))
         else:
             print(f"  Unknown model: {model_name}"); continue
 
@@ -655,7 +745,7 @@ def main():
     print(f"\n{'='*70}")
     print(f"  FINAL RESULTS")
     print(f"{'='*70}")
-    for name in ['lstm', 'liquid', 'simple_cnn', 'resnet18']:
+    for name in ['lstm', 'liquid', 'transformer', 'simple_cnn', 'resnet18']:
         cp = os.path.join(save_dir, f"{name}_best.pt")
         if os.path.exists(cp):
             c = torch.load(cp, map_location='cpu', weights_only=False)
